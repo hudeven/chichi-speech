@@ -51,10 +51,10 @@ curl http://localhost:9090/docs
 ```bash
 # Basic usage
 source $CHICHI_SPEECH_HOME/.venv/bin/activate
-chichi-speech-client "你好，我是Qwen TTS助手。" -o 你好我是Qwen.wav
+chichi-speech-client "你好，我是Qwen TTS助手。" -o output/你好我是Qwen.wav
 
 # Specify language
-chichi-speech-client "Hello world" -l English -o hello_world.wav
+chichi-speech-client "Hello world" -l English -o output/hello_world.wav
 ```
 
 **Option B: Using CURL (Direct API)**
@@ -65,7 +65,7 @@ curl -X POST "http://localhost:9090/synthesize" \
            "text": "Nice to meet you",
            "language": "English"
          }' \
-     --output nice_to_meet.wav
+     --output output/nice_to_meet.wav
 ```
 
 ## Functionality
