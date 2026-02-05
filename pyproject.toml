@@ -1,0 +1,30 @@
+[project]
+name = "chichi-speech"
+version = "0.1.0"
+description = "Qwen3 TTS Service with Voice Cloning"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "requests",
+    "torch",
+    "soundfile",
+    "pydantic",
+    "qwen-tts",
+    "numba>=0.59.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "httpx",
+]
+
+[project.scripts]
+chichi-speech-server = "chichi_speech.server:main"
+chichi-speech-client = "chichi_speech.client:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
