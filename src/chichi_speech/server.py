@@ -15,14 +15,8 @@ model = None
 VOICE_PROMPT = None
 
 # Hardcoded reference constants for voice cloning
-REF_AUDIO_BATCH = [
-    "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_2.wav",
-    "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_1.wav"
-]
-REF_TEXT_BATCH = [
-    "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you.",
-    "甚至出现交易几乎停滞的情况。"
-]
+REF_AUDIO = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_2.wav"
+REF_TEXT = "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
 
 @app.on_event("startup")
 async def startup_event():
@@ -42,8 +36,8 @@ async def startup_event():
     # We default x_vector_only_mode to False as the variable 'xvec_only' 
     # from the snippet is unknown, and typically such flags are optional.
     VOICE_PROMPT = model.create_voice_clone_prompt(
-        ref_audio=REF_AUDIO_BATCH,
-        ref_text=REF_TEXT_BATCH,
+        ref_audio=REF_AUDIO,
+        ref_text=REF_TEXT,
         # x_vector_only_mode=False
     )
     print("Service Ready.")
@@ -103,15 +97,11 @@ def main():
         args.port = int(os.environ["PORT"])
 
     # Update global configuration if arguments specific
-    global REF_AUDIO_BATCH, REF_TEXT_BATCH
+    global REF_AUDIO, REF_TEXT
     if args.ref_audio:
-        REF_AUDIO_BATCH = args.ref_audio
+        REF_AUDIO = args.ref_audio
     if args.ref_text:
-        REF_TEXT_BATCH = args.ref_text
-
-    if len(REF_AUDIO_BATCH) != len(REF_TEXT_BATCH):
-        print(f"Error: Number of reference audio files ({len(REF_AUDIO_BATCH)}) does not match number of reference texts ({len(REF_TEXT_BATCH)}).")
-        exit(1)
+        REF_TEXT = args.ref_text
 
     print(f"Starting server on {args.host}:{args.port}")
     if args.ref_audio:

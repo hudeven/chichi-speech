@@ -13,11 +13,12 @@ Prerequisites: `git`, `uv`, `python >= 3.10`.
 
 ```bash
 export CHICHI_SPEECH_HOME="~/chichi-speech/"
+export CHICHI_SPEECH_ENV="~/chichi-speech/.venv"
 git clone https://github.com/yourusername/chichi-speech.git $CHICHI_SPEECH_HOME
 cd $CHICHI_SPEECH_HOME
 
-uv venv .venv --python 3.10
-source .venv/bin/activate
+uv venv $CHICHI_SPEECH_ENV --python 3.10
+source $CHICHI_SPEECH_ENV/bin/activate
 
 uv pip install -e .
 ```
@@ -30,7 +31,7 @@ The service runs on port **9090** by default.
 
 ```bash
 # Start the server (runs in foreground, use & for background or a separate terminal)
-source $CHICHI_SPEECH_HOME/.venv/bin/activate
+source $$CHICHI_SPEECH_ENV/bin/activate
 chichi-speech-server
 # OR specify the port explicitly
 chichi-speech-server --port 9090 --host 0.0.0.0
@@ -50,10 +51,10 @@ curl http://localhost:9090/docs
 ```bash
 # Basic usage
 source $CHICHI_SPEECH_HOME/.venv/bin/activate
-chichi-speech-client "你好，我是Qwen TTS助手。" -o /tmp/output.wav
+chichi-speech-client "你好，我是Qwen TTS助手。" -o 你好我是Qwen.wav
 
 # Specify language
-chichi-speech-client "Hello world" -l English -o /tmp/hello.wav
+chichi-speech-client "Hello world" -l English -o hello_world.wav
 ```
 
 **Option B: Using CURL (Direct API)**
@@ -61,10 +62,10 @@ chichi-speech-client "Hello world" -l English -o /tmp/hello.wav
 curl -X POST "http://localhost:9090/synthesize" \
      -H "Content-Type: application/json" \
      -d '{
-           "text": "Hello world",
+           "text": "Nice to meet you",
            "language": "English"
          }' \
-     --output /tmp/output.wav
+     --output nice_to_meet.wav
 ```
 
 ## Functionality
