@@ -1,5 +1,5 @@
 ---
-name: qwen3-tts-service
+name: chichi-speech-skill
 description: A RESTful service for high-quality text-to-speech using Qwen3 and specialized voice cloning. Optimized for reusing a specific voice prompt to avoid re-computation.
 ---
 
@@ -9,15 +9,16 @@ This skill provides a FastAPI-based REST service for Qwen3 TTS, specifically con
 
 ## Installation
 
-Run the following command to install the service and client CLIs:
+Prerequisites: `git`, `uv`, `python >= 3.10`.
 
 ```bash
-cd chichi-speech
-# Create and activate a virtual environment using uv
+export CHICHI_SPEECH_HOME="~/chichi-speech/"
+git clone https://github.com/yourusername/chichi-speech.git $CHICHI_SPEECH_HOME
+cd $CHICHI_SPEECH_HOME
+
 uv venv .venv --python 3.10
 source .venv/bin/activate
 
-# Install the package
 uv pip install -e .
 ```
 
@@ -29,28 +30,41 @@ The service runs on port **9090** by default.
 
 ```bash
 # Start the server (runs in foreground, use & for background or a separate terminal)
+source $CHICHI_SPEECH_HOME/.venv/bin/activate
 chichi-speech-server
 # OR specify the port explicitly
-PORT=9090 chichi-speech-server
-# OR use command line flags
 chichi-speech-server --port 9090 --host 0.0.0.0
 # OR specify a different reference audio path (Recommended)
 chichi-speech-server --ref-audio /path/to/my/voice.wav --ref-text "caption of the reference audio"
 ```
 
-### 2. Generate Speech
+### 2. Verify Service is Running
+Check the health/docs:
+```bash
+curl http://localhost:9090/docs
+```
 
-Use the client CLI to send requests to the service.
+### 3. Generate Speech
 
+**Option A: Using Client CLI**
 ```bash
 # Basic usage
-chichi-speech-client "你好，我是Qwen TTS助手。" -o output.wav
+source $CHICHI_SPEECH_HOME/.venv/bin/activate
+chichi-speech-client "你好，我是Qwen TTS助手。" -o /tmp/output.wav
 
 # Specify language
-chichi-speech-client "Hello world" -l English -o hello.wav
+chichi-speech-client "Hello world" -l English -o /tmp/hello.wav
+```
 
-# Specify custom service URL explicitly
-chichi-speech-client "Test" --url http://localhost:9090
+**Option B: Using CURL (Direct API)**
+```bash
+curl -X POST "http://localhost:9090/synthesize" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "text": "Hello world",
+           "language": "English"
+         }' \
+     --output /tmp/output.wav
 ```
 
 ## Functionality
