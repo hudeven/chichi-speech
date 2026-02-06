@@ -9,10 +9,10 @@ This skill provides a FastAPI-based REST service for Qwen3 TTS, specifically con
 
 ## Installation
 
-Prerequisites: `git`, `uv`, `python >= 3.10`.
+Prerequisites: `python >= 3.10`.
 
 ```bash
-pip install chichi-speech
+pip install -e .
 ```
 
 ## Usage
@@ -23,11 +23,8 @@ The service runs on port **9090** by default.
 
 ```bash
 # Start the server (runs in foreground, use & for background or a separate terminal)
-chichi-speech
-# OR specify the port explicitly
-chichi-speech --port 9090 --host 0.0.0.0
-# OR specify a different reference audio path (Recommended)
-chichi-speech --ref-audio /path/to/my/voice.wav --ref-text "caption of the reference audio"
+# Optional: Uudate to your own reference audio and text for voice cloning
+chichi-speech --port 9090 --host 127.0.0.1 --ref-audio "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_2.wav" --ref-text "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
 ```
 
 ### 2. Verify Service is Running
@@ -61,4 +58,4 @@ curl -X POST "http://localhost:9090/synthesize" \
 -   `qwen-tts` (Qwen3 model library)
 -   Access to a reference audio file for voice cloning.
     -   By default, it uses public sample audio from Qwen3.
-    -   **CRITICAL**: You can provide your own reference audio using the `--ref-audio` flag.
+    -   **CRITICAL**: You can provide your own reference audio using the `--ref-audio` and `--ref-text` flags.
