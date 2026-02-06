@@ -14,56 +14,69 @@ Chichi Speech provides a robust REST API and CLI tools for text-to-speech synthe
 
 ## Installation
 
-Ensure you have Python 3.10 or higher.
+Prerequisites: `git`, `uv`, `python >= 3.10`.
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/chichi-speech.git
-cd chichi-speech
+export CHICHI_SPEECH_HOME="~/chichi-speech/"
+export CHICHI_SPEECH_ENV="~/chichi-speech/.venv"
+git clone https://github.com/yourusername/chichi-speech.git $CHICHI_SPEECH_HOME
+cd $CHICHI_SPEECH_HOME
 
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate
+uv venv $CHICHI_SPEECH_ENV --python 3.10
+source $CHICHI_SPEECH_ENV/bin/activate
 
-# Install dependencies (for users)
 uv pip install -e .
 ```
 
-## Quick Start
+## Usage
 
-### 1. Run the Server
+### 1. Start the Service
 
-Start the TTS server locally. It will download the necessary models on the first run.
+The service runs on port **9090** by default.
 
 ```bash
+# Start the server (runs in foreground, use & for background or a separate terminal)
+source $$CHICHI_SPEECH_ENV/bin/activate
 chichi-speech-server
+# OR specify the port explicitly
+chichi-speech-server --port 9090 --host 0.0.0.0
+# OR specify your reference audio and text for voice cloning (Recommended)
+chichi-speech-server --ref-audio /path/to/my/voice.wav --ref-text "caption of the reference audio"
 ```
 
-By default, the server runs on `http://0.0.0.0:9090`.
-
-### 2. Generate Speech
-
-Use the client to generate audio:
-
+### 2. Verify Service is Running
+Check the health/docs:
 ```bash
-chichi-speech-client "Hello, welcome to Chichi Speech!" -o welcome.wav
+curl http://localhost:9090/docs
 ```
 
-### Advanced Usage
+### 3. Generate Speech
 
-#### Custom Voice Cloning
-
-You can start the server with a specific reference audio to clone a custom voice:
-
+Use cURL:
 ```bash
+curl -X POST "http://localhost:9090/synthesize" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "text": "Nice to meet you",
+           "language": "English"
+         }' \
+     --output output/nice_to_meet.wav
+```
 
-## Development
+## Functionality
+-   **Endpoint**: `POST /synthesize`
+-   **Default Port**: 9090
+-   **Voice Cloning**: Uses a pre-computed voice prompt from reference files to ensure the cloned voice is consistent and generation is fast.
+
+# Development
+
 Install dev dependencies:
 ```bash
 uv pip install -e ".[dev]"
 ```
 
 Run tests:
+```bash
 pytest
 ```
 
