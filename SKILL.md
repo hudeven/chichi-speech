@@ -47,17 +47,7 @@ curl http://localhost:9090/docs
 
 ### 3. Generate Speech
 
-**Option A: Using Client CLI**
-```bash
-# Basic usage
-source $CHICHI_SPEECH_HOME/.venv/bin/activate
-chichi-speech-client "你好，我是Qwen TTS助手。" -o output/你好我是Qwen.wav
-
-# Specify language
-chichi-speech-client "Hello world" -l English -o output/hello_world.wav
-```
-
-**Option B: Using CURL (Direct API)**
+Use cURL:
 ```bash
 curl -X POST "http://localhost:9090/synthesize" \
      -H "Content-Type: application/json" \
