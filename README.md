@@ -12,7 +12,7 @@ Acknowledgement: This project is just a simple wrapper of [Qwen3-TTS](https://gi
 -   **Voice Cloning**: Clone voices from reference audio files.
 -   **Efficient**: Optimized for reusing voice prompts to minimize computation for repeated requests.
 -   **Standardized API**: Simple REST API (`/synthesize`) for easy integration.
--   **CLI Tools**: Includes `chichi-speech-server` and `chichi-speech-client` for immediate use.
+-   **CLI Tools**: Includes `chichi-speech` and `chichi-speech-client` for immediate use.
 
 ## Installation
 
@@ -30,11 +30,11 @@ The service runs on port **9090** by default.
 
 ```bash
 # Start the server (runs in foreground, use & for background or a separate terminal)
-chichi-speech-server
+chichi-speech
 # OR specify the port explicitly
-chichi-speech-server --port 9090 --host 0.0.0.0
+chichi-speech --port 9090 --host 0.0.0.0
 # OR specify your reference audio and text for voice cloning (Recommended)
-chichi-speech-server --ref-audio /path/to/my/voice.wav --ref-text "caption of the reference audio"
+chichi-speech --ref-audio /path/to/my/voice.wav --ref-text "caption of the reference audio"
 ```
 
 ### 2. Verify Service is Running

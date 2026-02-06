@@ -1,5 +1,5 @@
 ---
-name: chichi-speech-skill
+name: chichi-speech
 description: A RESTful service for high-quality text-to-speech using Qwen3 and specialized voice cloning. Optimized for reusing a specific voice prompt to avoid re-computation.
 ---
 
@@ -12,15 +12,7 @@ This skill provides a FastAPI-based REST service for Qwen3 TTS, specifically con
 Prerequisites: `git`, `uv`, `python >= 3.10`.
 
 ```bash
-export CHICHI_SPEECH_HOME="~/chichi-speech/"
-export CHICHI_SPEECH_ENV="~/chichi-speech/.venv"
-git clone https://github.com/yourusername/chichi-speech.git $CHICHI_SPEECH_HOME
-cd $CHICHI_SPEECH_HOME
-
-uv venv $CHICHI_SPEECH_ENV --python 3.10
-source $CHICHI_SPEECH_ENV/bin/activate
-
-uv pip install -e .
+pip install chichi-speech
 ```
 
 ## Usage
@@ -31,12 +23,11 @@ The service runs on port **9090** by default.
 
 ```bash
 # Start the server (runs in foreground, use & for background or a separate terminal)
-source $$CHICHI_SPEECH_ENV/bin/activate
-chichi-speech-server
+chichi-speech
 # OR specify the port explicitly
-chichi-speech-server --port 9090 --host 0.0.0.0
+chichi-speech --port 9090 --host 0.0.0.0
 # OR specify a different reference audio path (Recommended)
-chichi-speech-server --ref-audio /path/to/my/voice.wav --ref-text "caption of the reference audio"
+chichi-speech --ref-audio /path/to/my/voice.wav --ref-text "caption of the reference audio"
 ```
 
 ### 2. Verify Service is Running

@@ -24,7 +24,7 @@ dev = [
 ]
 
 [project.scripts]
-chichi-speech-server = "chichi_speech.server:main"
+chichi-speech = "chichi_speech.server:main"
 chichi-speech-client = "chichi_speech.client:main"
 
 [build-system]
