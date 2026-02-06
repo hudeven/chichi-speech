@@ -4,6 +4,8 @@
 
 Chichi Speech provides a robust REST API and CLI tools for text-to-speech synthesis, featuring efficient voice cloning capabilities. It is designed to be easily deployed or integrated into other AI agents and workflows.
 
+Acknowledgement: This project is just a simple wrapper of [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS), the SOTA TTS model as of 2/5/2025.
+
 ## Features
 
 -   **High Quality**: Utilizes the Qwen3-TTS model for state-of-the-art speech synthesis.
@@ -14,18 +16,10 @@ Chichi Speech provides a robust REST API and CLI tools for text-to-speech synthe
 
 ## Installation
 
-Prerequisites: `git`, `uv`, `python >= 3.10`.
+Prerequisites: `python >= 3.10`.
 
 ```bash
-export CHICHI_SPEECH_HOME="~/chichi-speech/"
-export CHICHI_SPEECH_ENV="~/chichi-speech/.venv"
-git clone https://github.com/yourusername/chichi-speech.git $CHICHI_SPEECH_HOME
-cd $CHICHI_SPEECH_HOME
-
-uv venv $CHICHI_SPEECH_ENV --python 3.10
-source $CHICHI_SPEECH_ENV/bin/activate
-
-uv pip install -e .
+pip install chichi-speech
 ```
 
 ## Usage
@@ -36,7 +30,6 @@ The service runs on port **9090** by default.
 
 ```bash
 # Start the server (runs in foreground, use & for background or a separate terminal)
-source $$CHICHI_SPEECH_ENV/bin/activate
 chichi-speech-server
 # OR specify the port explicitly
 chichi-speech-server --port 9090 --host 0.0.0.0
@@ -72,7 +65,7 @@ curl -X POST "http://localhost:9090/synthesize" \
 
 Install dev dependencies:
 ```bash
-uv pip install -e ".[dev]"
+pip install -e ".[dev]"
 ```
 
 Run tests:

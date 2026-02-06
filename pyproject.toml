@@ -1,6 +1,6 @@
 [project]
 name = "chichi-speech"
-version = "0.1.0"
+version = "0.1.1"
 description = "Qwen3 TTS Service with Voice Cloning"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -19,6 +19,8 @@ dependencies = [
 dev = [
     "pytest",
     "httpx",
+    "build",
+    "twine",
 ]
 
 [project.scripts]
