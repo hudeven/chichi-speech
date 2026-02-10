@@ -32,7 +32,7 @@ The service runs on port **9090** by default.
 
 ```bash
 # Production: Use the included script to run as a daemon with auto-restart
-./scripts/start_server.sh --ref-audio src/assets/ref_audio.wav --ref-text src/assets/ref_text.txt
+./scripts/start_server.sh --ref-audio src/assets/coco.wav --ref-text src/assets/coco.txt
 
 # To stop:
 # ./scripts/stop_server.sh
