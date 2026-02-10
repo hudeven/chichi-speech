@@ -1,13 +1,18 @@
+import numpy as np
+import re
 import uvicorn
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 import torch
 import soundfile as sf
 import io
-from qwen_tts import Qwen3TTSModel
 import os
+
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from qwen_tts import Qwen3TTSModel
 from pathlib import Path
+
+from . import config
 
 # Initialize FastAPI app
 app = FastAPI(title="ChiChi Speech Service")
@@ -16,21 +21,6 @@ app = FastAPI(title="ChiChi Speech Service")
 model = None
 VOICE_PROMPT = None
 
-# Determine absolute path to assets
-CURRENT_DIR = Path(__file__).parent.absolute()
-ASSETS_DIR = CURRENT_DIR / "assets"
-DEFAULT_REF_AUDIO = str(ASSETS_DIR / "coco.wav")
-DEFAULT_REF_TEXT_PATH = ASSETS_DIR / "coco.txt"
-
-# Default reference constants
-REF_AUDIO = DEFAULT_REF_AUDIO
-# Read default reference text from file
-try:
-    with open(DEFAULT_REF_TEXT_PATH, "r", encoding="utf-8") as f:
-        REF_TEXT = f.read().strip()
-except Exception as e:
-    print(f"Warning: Could not read default reference text from {DEFAULT_REF_TEXT_PATH}: {e}")
-    REF_TEXT = "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
 
 @app.on_event("startup")
 async def startup_event():
@@ -49,37 +39,13 @@ async def startup_event():
     # This corresponds to: prompt_items = tts.create_voice_clone_prompt(...)
     # We default x_vector_only_mode to False as the variable 'xvec_only' 
     # from the snippet is unknown, and typically such flags are optional.
-    global REF_AUDIO, REF_TEXT
-    
-    # Check for environment variable overrides (important for Gunicorn usage)
-    if "REF_AUDIO" in os.environ:
-       REF_AUDIO = os.environ["REF_AUDIO"]
-       
-    if "REF_TEXT" in os.environ:
-       ref_text_val = os.environ["REF_TEXT"]
-       # Check if it is a file path
-       if os.path.isfile(ref_text_val):
-           try:
-               with open(ref_text_val, "r", encoding="utf-8") as f:
-                   REF_TEXT = f.read().strip()
-               print(f"Loaded reference text from file (ENV): {ref_text_val}")
-           except Exception as e:
-               print(f"Error reading reference text file from ENV {ref_text_val}: {e}")
-               # Fallback to using the value as text if read fails? Or exit?
-               # For robustness in startup, maybe we fail hard if it looks like a file but fails?
-               # But given previous logic, let's treat it as text if read fails or assume it wasn't a file 
-               # (though isfile passes). 
-               # Let's trust isfile for now.
-               raise e
-       else:
-           REF_TEXT = ref_text_val
-
-    print(f"Using Reference Audio: {REF_AUDIO}")
-    print(f"Using Reference Text: {REF_TEXT}")
+    # config.REF_AUDIO and config.REF_TEXT are already loaded
+    print(f"Using Reference Audio: {config.REF_AUDIO}")
+    print(f"Using Reference Text: {config.REF_TEXT}")
 
     VOICE_PROMPT = model.create_voice_clone_prompt(
-        ref_audio=REF_AUDIO,
-        ref_text=REF_TEXT,
+        ref_audio=config.REF_AUDIO,
+        ref_text=config.REF_TEXT,
         # x_vector_only_mode=False
     )
     print("Service Ready.")
@@ -88,31 +54,100 @@ class SynthesisRequest(BaseModel):
     text: str
     language: str = "auto"
 
+
+def chunk_text(text: str, max_chars: int = config.MAX_CHUNK_CHARS) -> list[str]:
+    """
+    Split text into chunks based on punctuation to avoid cutting words,
+    keeping chunks under max_chars.
+    """
+    text = text.strip()
+    if len(text) <= max_chars:
+        return [text]
+        
+    chunks = []
+    current_chunk = ""
+    
+    # Split by sentence-ending punctuation, keeping the punctuation
+    # This regex splits by (. ! ? ...) and keeps the delimiter
+    # We also handle newlines as splits if needed, but basic punctuation is a start.
+    sentences = re.split(r'([.!?\n]+)', text)
+    
+    # Re-attach punctuation to sentences
+    real_sentences = []
+    for i in range(0, len(sentences) - 1, 2):
+        s = sentences[i] + sentences[i+1]
+        if s.strip():
+            real_sentences.append(s)
+    
+    # Handle the last part if it didn't end with punctuation
+    if len(sentences) % 2 == 1 and sentences[-1].strip():
+        real_sentences.append(sentences[-1])
+        
+    for sentence in real_sentences:
+        if len(current_chunk) + len(sentence) <= max_chars:
+            current_chunk += sentence
+        else:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+            current_chunk = sentence
+            
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+        
+    # Fallback: if a single sentence is still too long (rare), forced split could be added here
+    # For now, we assume sentences are reasonable.
+    
+    return chunks or [text]
+
+
 @app.post("/synthesize")
 def synthesize(request: SynthesisRequest):
     """
     Synthesize speech using the pre-loaded voice clone prompt.
+    Uses batch processing for long texts.
     """
     if not model or VOICE_PROMPT is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
 
     try:
-        # Generate the voice clone
-        # corresponding to: return tts.generate_voice_clone(...)
-        wavs, sr = model.generate_voice_clone(
-            text=request.text,
-            language=request.language,
-            voice_clone_prompt=VOICE_PROMPT,
-        )
+        # 1. Chunk the text
+        text_chunks = chunk_text(request.text)
+        print(f"Synthesizing text of length {len(request.text)} in {len(text_chunks)} chunks...")
+
+        all_audio_segments = []
+        sample_rate = None
+
+        # 2. Process in batches
+        for i in range(0, len(text_chunks), config.BATCH_SIZE):
+            batch = text_chunks[i : i + config.BATCH_SIZE]
+            print(f"Processing batch {i//config.BATCH_SIZE + 1}/{(len(text_chunks)+config.BATCH_SIZE-1)//config.BATCH_SIZE} with size {len(batch)}")
+            
+            # Generate the voice clone (batch)
+            wavs, sr = model.generate_voice_clone(
+                text=batch,
+                language=request.language,
+                voice_clone_prompt=VOICE_PROMPT,
+            )
+            
+            # Record sample rate (should be constant)
+            if sample_rate is None:
+                sample_rate = sr
+                
+            # Collect audio segments
+            for wav in wavs:
+                if hasattr(wav, "cpu"):
+                    wav = wav.cpu().float().numpy()
+                all_audio_segments.append(wav)
         
-        # wavs[0] is the audio data. Ensure it's a numpy array for soundfile.
-        audio_data = wavs[0]
-        if hasattr(audio_data, "cpu"):
-             audio_data = audio_data.cpu().float().numpy()
-             
+        if not all_audio_segments:
+             raise HTTPException(status_code=400, detail="No audio generated")
+
+        # 3. Concatenate all segments
+        final_audio = np.concatenate(all_audio_segments)
+        
         # Write to an in-memory buffer
         buffer = io.BytesIO()
-        sf.write(buffer, audio_data, sr, format='WAV')
+        sf.write(buffer, final_audio, sample_rate, format='WAV')
         buffer.seek(0)
         
         return StreamingResponse(buffer, media_type="audio/wav")
@@ -139,24 +174,22 @@ def main():
         args.port = int(os.environ["PORT"])
 
     # Update global configuration if arguments specific
-    global REF_AUDIO, REF_TEXT
+    # Update global configuration if arguments specific
     if args.ref_audio:
-        REF_AUDIO = args.ref_audio
+        config.REF_AUDIO = args.ref_audio
         
     if args.ref_text:
         # Check if argument is a file path
         if os.path.isfile(args.ref_text):
             try:
                 with open(args.ref_text, "r", encoding="utf-8") as f:
-                    REF_TEXT = f.read().strip()
+                    config.REF_TEXT = f.read().strip()
                 print(f"Loaded reference text from file: {args.ref_text}")
             except Exception as e:
                 print(f"Error reading reference text file {args.ref_text}: {e}")
                 exit(1)
         else:
-            # Not a file, verify if it looks like a path but doesn't exist?
-            # Or just treat as text.
-            REF_TEXT = args.ref_text
+            config.REF_TEXT = args.ref_text
 
     print(f"Starting server on {args.host}:{args.port}")
     if args.ref_audio:

@@ -71,15 +71,15 @@ fi
 
 nohup bash -c "
 export UV_PROJECT_ENVIRONMENT='$ENV_PATH'
+export BATCH_SIZE='${BATCH_SIZE}'
 while true; do
   echo \"[$(date)] Starting gunicorn...\" >> $LOG_FILE
   # Use uv run to ensure environment is correct
-  # We use gunicorn to manage workers
-  # -w 1 --threads 4: 1 Process, 4 Threads per process (safer with 1.7B model)
-  # -k uvicorn.workers.UvicornWorker: Run ASGI app
-  uv run gunicorn -w $WORKERS --threads $THREADS -k uvicorn.workers.UvicornWorker \
-      -b $HOST:$PORT --timeout $TIMEOUT \
-      chichi_speech.server:app >> $LOG_FILE 2>&1
+  # We use uvicorn directly to avoid MPS/Forking issues with gunicorn
+  # Since the endpoint is synchronous, uvicorn will run it in a threadpool,
+  # handling concurrency effectively without multiple processes.
+  uv run uvicorn chichi_speech.server:app \
+      --host $HOST --port $PORT --workers 1 --timeout-keep-alive $TIMEOUT >> $LOG_FILE 2>&1
   
   EXIT_CODE=\$?
   echo \"[$(date)] Server exited with code \$EXIT_CODE. Respwaning in 1s...\" >> $LOG_FILE

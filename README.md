@@ -15,6 +15,22 @@ Acknowledgement: This project is just a simple wrapper of [Qwen3-TTS](https://gi
 -   **Standardized API**: Simple REST API (`/synthesize`) for easy integration.
 -   **CLI Tools**: Includes `chichi-speech` and `chichi-speech-client` for immediate use.
 
+## Performance Optimization
+
+Chichi Speech includes built-in optimizations for low-latency synthesis, particularly for long texts:
+
+-   **Text Chunking**: Long inputs are intelligently split into smaller segments (max 300 chars) to prevent memory issues and enable parallel processing.
+-   **Batch Processing**: Chunks are processed in parallel batches on the GPU, significantly improving throughput.
+-   **Concurrency**: The server uses a non-blocking architecture with a thread pool to handle multiple concurrent requests efficiently.
+
+### Latency Benchmark (1060 characters)
+
+| Metric | Original | Optimized | Speedup |
+| :--- | :--- | :--- | :--- |
+| **Total Time** | ~98.31s | ~43.28s | **2.27x** |
+| **Stability** | Prone to OOM | Stable | - |
+
+
 ## Installation
 
 Prerequisites: `python >= 3.10`.
