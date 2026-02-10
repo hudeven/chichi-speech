@@ -1,6 +1,7 @@
 ---
 name: chichi-speech
 description: A RESTful service for high-quality text-to-speech using Qwen3 and specialized voice cloning. Optimized for reusing a specific voice prompt to avoid re-computation.
+metadata: {"openclaw":{"always":true,"emoji":"🦞","homepage":"https://github.com/hudeven/chichi-speech/blob/main/SKILL.md","os":["darwin","linux"],"tags":["python","tts", "text-to-speech", "voice-cloning"],"requires":{"anyBins":["brew","uv"]}}}
 ---
 
 # Chichi Speech Service
@@ -9,10 +10,18 @@ This skill provides a FastAPI-based REST service for Qwen3 TTS, specifically con
 
 ## Installation
 
-Prerequisites: `python >= 3.10`.
+Prerequisites: `uv` and `python >= 3.10`.
 
+### If uv not installed, install it first
 ```bash
-pip install -e .
+command -v uv || brew install uv || (curl -LsSf https://astral.sh/uv/install.sh | sh)
+```
+### Install chichi-speech
+```bash
+export CHICHI_SPEECH_VENV="/Users/$USER/envs/chichi-speech"
+uv venv $CHICHI_SPEECH_VENV
+source $CHICHI_SPEECH_VENV/bin/activate
+uv pip install -e .
 ```
 
 ## Usage
@@ -24,7 +33,7 @@ The service runs on port **9090** by default.
 ```bash
 # Start the server (runs in foreground, use & for background or a separate terminal)
 # Optional: Uudate to your own reference audio and text for voice cloning
-chichi-speech --port 9090 --host 127.0.0.1 --ref-audio "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_2.wav" --ref-text "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
+UV_PROJECT_ENVIRONMENT="/Users/$USER/envs/chichi-speech" uv run chichi-speech --port 9090 --host 127.0.0.1 --ref-audio "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_2.wav" --ref-text "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
 ```
 
 ### 2. Verify Service is Running
@@ -34,14 +43,26 @@ curl http://localhost:9090/docs
 ```
 
 ### 3. Generate Speech
+If the "text" is longer than 10 sentences, split it to smaller chunks(10 sentences per chunk) and synthesized separately.
+Specify the "language" based on the input "text".
+Available languages:
+- Chinese
+- English
+- Japanese
+- Korean
+- German
+- French
+- Russian
+- Portuguese
+- Spanish
+- Italian
 
-Use cURL:
 ```bash
 curl -X POST "http://localhost:9090/synthesize" \
      -H "Content-Type: application/json" \
      -d '{
            "text": "Nice to meet you",
-           "language": "English"
+           "language": "auto"
          }' \
      --output output/nice_to_meet.wav
 ```

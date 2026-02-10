@@ -44,7 +44,7 @@ async def startup_event():
 
 class SynthesisRequest(BaseModel):
     text: str
-    language: str = "Chinese"
+    language: str = "auto"
 
 @app.post("/synthesize")
 async def synthesize(request: SynthesisRequest):
