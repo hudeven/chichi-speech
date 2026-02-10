@@ -71,7 +71,7 @@ fi
 
 nohup bash -c "
 export UV_PROJECT_ENVIRONMENT='$ENV_PATH'
-export BATCH_SIZE='${BATCH_SIZE}'
+export BATCH_SIZE=\${BATCH_SIZE:-4}
 while true; do
   echo \"[$(date)] Starting gunicorn...\" >> $LOG_FILE
   # Use uv run to ensure environment is correct

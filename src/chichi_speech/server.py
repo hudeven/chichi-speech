@@ -53,6 +53,7 @@ async def startup_event():
 class SynthesisRequest(BaseModel):
     text: str
     language: str = "auto"
+    format: str = "wav"  # wav, ogg, mp3 (if supported)
 
 
 def chunk_text(text: str, max_chars: int = config.MAX_CHUNK_CHARS) -> list[str]:
@@ -147,10 +148,26 @@ def synthesize(request: SynthesisRequest):
         
         # Write to an in-memory buffer
         buffer = io.BytesIO()
-        sf.write(buffer, final_audio, sample_rate, format='WAV')
+        
+        fmt = request.format.upper()
+        if fmt == "OGG":
+            sf.write(buffer, final_audio, sample_rate, format='OGG', subtype='VORBIS')
+            media_type = "audio/ogg"
+        elif fmt == "MP3":
+             # Soundfile may or may not support MP3 writing depending on libs. 
+             try:
+                 sf.write(buffer, final_audio, sample_rate, format='MP3')
+                 media_type = "audio/mpeg"
+             except Exception as e:
+                 raise HTTPException(status_code=400, detail=f"MP3 encoding not supported: {e}")
+        else:
+            # Default to WAV
+            sf.write(buffer, final_audio, sample_rate, format='WAV')
+            media_type = "audio/wav"
+            
         buffer.seek(0)
         
-        return StreamingResponse(buffer, media_type="audio/wav")
+        return StreamingResponse(buffer, media_type=media_type)
         
     except Exception as e:
         import traceback

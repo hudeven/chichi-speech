@@ -66,9 +66,10 @@ curl -X POST "http://localhost:9090/synthesize" \
      -H "Content-Type: application/json" \
      -d '{
            "text": "Nice to meet you",
-           "language": "auto"
+           "language": "auto",
+           "format": "ogg"
          }' \
-     --output output/nice_to_meet.wav
+     --output output/nice_to_meet.ogg
 ```
 
 ## Functionality
