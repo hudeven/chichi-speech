@@ -19,7 +19,7 @@ command -v uv || brew install uv || (curl -LsSf https://astral.sh/uv/install.sh 
 ### Install chichi-speech
 ```bash
 export CHICHI_SPEECH_VENV="/Users/$USER/envs/chichi-speech"
-uv venv $CHICHI_SPEECH_VENV
+uv venv $CHICHI_SPEECH_VENV --allow-existing
 source $CHICHI_SPEECH_VENV/bin/activate
 uv pip install -e .
 ```
@@ -31,15 +31,19 @@ uv pip install -e .
 The service runs on port **9090** by default.
 
 ```bash
-# Start the server (runs in foreground, use & for background or a separate terminal)
-# Optional: Uudate to your own reference audio and text for voice cloning
-UV_PROJECT_ENVIRONMENT="/Users/$USER/envs/chichi-speech" uv run chichi-speech --port 9090 --host 127.0.0.1 --ref-audio "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_2.wav" --ref-text "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
+# Production: Use the included script to run as a daemon with auto-restart
+./scripts/start_server.sh --ref-audio src/assets/ref_audio.wav --ref-text src/assets/ref_text.txt
+
+# To stop:
+# ./scripts/stop_server.sh
+
+# Logs are written to /tmp/chichi_server.log
 ```
 
 ### 2. Verify Service is Running
-Check the health/docs:
+Wait for ~15s for model to be loaded. Then Check the health/docs:
 ```bash
-curl http://localhost:9090/docs
+sleep 15 && curl http://localhost:9090/docs
 ```
 
 ### 3. Generate Speech

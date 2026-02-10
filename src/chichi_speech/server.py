@@ -6,6 +6,8 @@ import torch
 import soundfile as sf
 import io
 from qwen_tts import Qwen3TTSModel
+import os
+from pathlib import Path
 
 # Initialize FastAPI app
 app = FastAPI(title="ChiChi Speech Service")
@@ -14,9 +16,21 @@ app = FastAPI(title="ChiChi Speech Service")
 model = None
 VOICE_PROMPT = None
 
-# Hardcoded reference constants for voice cloning
-REF_AUDIO = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_2.wav"
-REF_TEXT = "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
+# Determine absolute path to assets
+CURRENT_DIR = Path(__file__).parent.absolute()
+ASSETS_DIR = CURRENT_DIR / "assets"
+DEFAULT_REF_AUDIO = str(ASSETS_DIR / "coco.wav")
+DEFAULT_REF_TEXT_PATH = ASSETS_DIR / "coco.txt"
+
+# Default reference constants
+REF_AUDIO = DEFAULT_REF_AUDIO
+# Read default reference text from file
+try:
+    with open(DEFAULT_REF_TEXT_PATH, "r", encoding="utf-8") as f:
+        REF_TEXT = f.read().strip()
+except Exception as e:
+    print(f"Warning: Could not read default reference text from {DEFAULT_REF_TEXT_PATH}: {e}")
+    REF_TEXT = "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
 
 @app.on_event("startup")
 async def startup_event():
@@ -35,6 +49,34 @@ async def startup_event():
     # This corresponds to: prompt_items = tts.create_voice_clone_prompt(...)
     # We default x_vector_only_mode to False as the variable 'xvec_only' 
     # from the snippet is unknown, and typically such flags are optional.
+    global REF_AUDIO, REF_TEXT
+    
+    # Check for environment variable overrides (important for Gunicorn usage)
+    if "REF_AUDIO" in os.environ:
+       REF_AUDIO = os.environ["REF_AUDIO"]
+       
+    if "REF_TEXT" in os.environ:
+       ref_text_val = os.environ["REF_TEXT"]
+       # Check if it is a file path
+       if os.path.isfile(ref_text_val):
+           try:
+               with open(ref_text_val, "r", encoding="utf-8") as f:
+                   REF_TEXT = f.read().strip()
+               print(f"Loaded reference text from file (ENV): {ref_text_val}")
+           except Exception as e:
+               print(f"Error reading reference text file from ENV {ref_text_val}: {e}")
+               # Fallback to using the value as text if read fails? Or exit?
+               # For robustness in startup, maybe we fail hard if it looks like a file but fails?
+               # But given previous logic, let's treat it as text if read fails or assume it wasn't a file 
+               # (though isfile passes). 
+               # Let's trust isfile for now.
+               raise e
+       else:
+           REF_TEXT = ref_text_val
+
+    print(f"Using Reference Audio: {REF_AUDIO}")
+    print(f"Using Reference Text: {REF_TEXT}")
+
     VOICE_PROMPT = model.create_voice_clone_prompt(
         ref_audio=REF_AUDIO,
         ref_text=REF_TEXT,
@@ -47,7 +89,7 @@ class SynthesisRequest(BaseModel):
     language: str = "auto"
 
 @app.post("/synthesize")
-async def synthesize(request: SynthesisRequest):
+def synthesize(request: SynthesisRequest):
     """
     Synthesize speech using the pre-loaded voice clone prompt.
     """
@@ -87,8 +129,8 @@ def main():
     parser = argparse.ArgumentParser(description="Qwen3 TTS Service")
     parser.add_argument("--port", type=int, default=9090, help="Service port (default: 9090)")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Service host (default: 0.0.0.0)")
-    parser.add_argument("--ref-audio", type=str, nargs="+", help="Path(s) to reference audio file(s) for voice cloning")
-    parser.add_argument("--ref-text", type=str, nargs="+", help="Reference text content(s) corresponding to the audio")
+    parser.add_argument("--ref-audio", type=str, help="Path to reference audio file for voice cloning")
+    parser.add_argument("--ref-text", type=str, help="Reference text content or path to text file corresponding to the audio")
 
     args = parser.parse_args()
 
@@ -100,8 +142,21 @@ def main():
     global REF_AUDIO, REF_TEXT
     if args.ref_audio:
         REF_AUDIO = args.ref_audio
+        
     if args.ref_text:
-        REF_TEXT = args.ref_text
+        # Check if argument is a file path
+        if os.path.isfile(args.ref_text):
+            try:
+                with open(args.ref_text, "r", encoding="utf-8") as f:
+                    REF_TEXT = f.read().strip()
+                print(f"Loaded reference text from file: {args.ref_text}")
+            except Exception as e:
+                print(f"Error reading reference text file {args.ref_text}: {e}")
+                exit(1)
+        else:
+            # Not a file, verify if it looks like a path but doesn't exist?
+            # Or just treat as text.
+            REF_TEXT = args.ref_text
 
     print(f"Starting server on {args.host}:{args.port}")
     if args.ref_audio:

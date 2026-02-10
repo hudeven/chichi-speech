@@ -13,6 +13,7 @@ dependencies = [
     "pydantic",
     "qwen-tts",
     "numba>=0.59.0",
+    "gunicorn",
 ]
 
 [project.optional-dependencies]
