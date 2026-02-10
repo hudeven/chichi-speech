@@ -151,7 +151,7 @@ def synthesize(request: SynthesisRequest):
         
         fmt = request.format.upper()
         if fmt == "OGG":
-            sf.write(buffer, final_audio, sample_rate, format='OGG', subtype='VORBIS')
+            sf.write(buffer, final_audio, sample_rate, format='OGG', subtype='OPUS')
             media_type = "audio/ogg"
         elif fmt == "MP3":
              # Soundfile may or may not support MP3 writing depending on libs. 
